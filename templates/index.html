@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>{{ title }}</title>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<!-- Le styles -->
+<link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="/static/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
+<link href="/static/bootstrap/css/custom.css" rel="stylesheet">
+</head>
+
+<body>
+	<div class="container">    
+		<div class="hero-unit">
+		<p>Make learning easy. Find pieces of knowledge and put them together like a </p>
+			<h1>Jigsaw</h1>			
+			<p> Puzzled, no more. </p>
+		</div>
+		<div class="row">
+			<div class="span8 offset2">
+    		<form class="form-search" action="/learn/analyze/" method="post" name="form1">
+			{% csrf_token %}
+				<textarea id="content" class="input-xlarge span6 search-query" 
+					placeholder="Enter some sentences here" ></textarea>
+				<button id="analyze" class="btn btn-primary btn-large search-query" 
+					type="submit" data-loading-text="Working">
+					Analyze
+				</button>
+			</form>
+			</div>
+			</div>
+			<div class="row">
+			<h3 class="page-header"> Interesting things we found </h3>
+				<div class="span8 offset2"> 
+			<table class="table table table-bordered table-condensed" id="entities">
+				<thead>
+				<tr>
+					<th>Type</th>
+					<th>Name</th>
+				</tr>
+				<thead>
+				<tbody>
+				
+				</tbody>
+			</table>
+			<button id="clearResults" class="btn btn-primary" data-loading-text="Working">Clear</button>
+			</div>
+		</div>
+		
+		<footer class="footer">
+			<div class="pull-right">
+				<a href="http://rainzoo.com/feedback.html"> Report issues, feedback </a>
+			</div>
+			<p>Read good stories. Etch silly dreams. Pursue them even if you
+				chuckle looking back.</p>		
+			<hr>
+	</footer>
+		</div>
+	
+
+<script src="/static/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#content').popover({ 
+		'placement': 'bottom' ,
+		'trigger' : 'manual', 
+		'title' : 'Tips',
+		'content' : 'Try simple ones like: Instagram was acquired by Facebook.'
+		});
+	$('#content').focus();
+	
+	$('#content').hover( function() {
+		if (($('#content').val()) == ''){
+				$(this).popover('show');
+		}
+	}, function() {
+			$(this).popover('hide');
+	});
+	
+	$(".alert").alert();
+	
+	$('#analyze').button();
+       $('#analyze').click(function(event){
+           event.preventDefault();
+           $('#analyze').button('loading');
+          
+			$.ajax({
+				 type:"POST",
+				 url:"/learn/analyze/",
+				 data: {
+						'content': $('#content').val(),
+						'csrfmiddlewaretoken': '{{ csrf_token }}'
+				 }})
+					.success(function(data) {
+						if (jQuery.isEmptyObject(data)){
+							$('.row :first').append('<div class="alert alert-error span3"> <a class="close" data-dismiss="alert" href="#">x</a><h4 class="alert-heading">Oops !</h4>' 
+									+ 'No results founds' +'</div>');
+						}else{
+						$.each(data, function(d) {
+							var row = "";
+							row = row.concat("<tr>")
+								for(k in this){
+									row = row.concat("<td>" + this[k] +"</td>");
+								}
+							$('#entities > tbody:last').append(row.concat("</tr>"));
+						$('#analyze').button('reset');
+						$('html, body').animate({ scrollTop: $('#entities').offset().top }, 'slow');
+						})}
+					})
+					.error(function(data) {
+						$('#analyze').button('reset');
+						$('.row :first').append('<div class="alert alert-error span3"> <a class="close" data-dismiss="alert" href="#">x</a><h4 class="alert-heading">Error!</h4>' 
+								+ 'Error' +'</div>');
+					})
+					.complete(function(data) {
+						$('#analyze').button('reset');
+					});
+		});
+       
+       	$('#clearResults').click( function() {
+       		$('#entities').find('tbody>tr').remove();
+       	})
+		});		
+		
+</script>
+</body>
+
+</html>
